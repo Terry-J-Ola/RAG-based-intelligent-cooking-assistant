@@ -91,7 +91,7 @@ class DataProcessingMoudle:
                 #如果 child_id 是 "小明",parent_id 是 "大明"。
                 #执行后，字典里就会存入：{"小明": "大明"}。
                 #这样当你拿着 "小明" 去查这个字典时，立刻就能知道他的父亲是 "大明"。
-            # 再对每一个父文档的所有chunks增强后,添加回去
+            # 再对每一个父文档的所有chunks元数据增强后,添加回去
             all_chunks.extend(md_chunks)
         self.chunks = all_chunks
         return all_chunks
@@ -112,9 +112,9 @@ class DataProcessingMoudle:
                 "content_length":len(doc.page_content),
                 "parent_id":doc.metadata.get('parent_id')
             })
-        with open(output_path, 'w', encoding='uft-8') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(metadata_list, f, ensure_ascii=False, indent=2)
-        print("元数据已导出到：{output_path}")
+        print(f"元数据已导出到：{output_path}")
 
     def get_parent_by_child(self, child_chunks: List[Document]):
         """
