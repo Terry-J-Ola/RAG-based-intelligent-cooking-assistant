@@ -69,7 +69,7 @@ class DataProcessingMoudle:
 
         for doc in self.documents:
             # 对每个文档进行Markdown分割
-            md_chunks = markdown_splitter.split_documents(doc)
+            md_chunks = markdown_splitter.split_text(doc.page_content)
             parent_id = doc.metadata["parent_id"]
             # 对每个chunk进行元数据增强并建立映射
             for i, chunk in enumerate(md_chunks):
@@ -95,6 +95,60 @@ class DataProcessingMoudle:
             all_chunks.extend(md_chunks)
         self.chunks = all_chunks
         return all_chunks
+    
+    def export_metadata(self, output_path: str):
+        """
+        导出元数据到JSON文件
+        
+        Arg:
+            output_path: 输出文件路径
+        """
+        import json
+
+        metadata_list = []
+        for doc in self.documents:
+            metadata_list.append({
+                "source":doc.metadata.get('source'),
+                "content_length":len(doc.page_content),
+                "parent_id":doc.metadata.get('parent_id')
+            })
+        with open(output_path, 'w', encoding='uft-8') as f:
+            json.dump(metadata_list, f, ensure_ascii=False, indent=2)
+        print("元数据已导出到：{output_path}")
+
+    def get_parent_by_child(self, child_chunks: List[Document]):
+        """
+        根据子块找到父文档
+        Arg: 
+            child_chunks:检索到的子块
+        Returns:
+            对应的父文档列表(按相关性去重)
+        """
+        # 统计每个父文档被匹配的次数(次数作为一种相关性指标)
+        parent_relevance = {}
+        parent_docs_map = {}
+        # 收集每个子块的parent_id和相关性分数
+        for chunk in child_chunks:
+            # 增加相关性分数
+            parent_id = chunk.metadata.get('parent_id')
+            parent_relevance[parent_id] = parent_relevance.get(parent_id, 0) + 1
+            # 缓存父文档，避免重复查找
+            if parent_id not in parent_docs_map:
+                for doc in self.documents:
+                    if doc.metadata.get('parent_id') == parent_id:
+                        parent_docs_map[parent_id] = doc
+                        break
+        # 按相关性分数排序(次数多的排前面),sorted_parent_ids是一个list
+        sorted_parent_ids = sorted(parent_relevance.keys(),
+                                  key = lambda x:parent_relevance[x],
+                                  reverse=True
+                                  )
+        # 构建去重后的,且相关性由高到低的父文档列表
+        sorted_parent_documents = []
+        for parent_id in sorted_parent_ids:
+            if parent_id in parent_docs_map:
+                sorted_parent_documents.append(parent_docs_map[parent_id])
+        return sorted_parent_documents
 
     def summary(self) -> dict:
         """快速查看数据处理概况，方便调试。"""
