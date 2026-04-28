@@ -41,7 +41,8 @@ class DataProcessingMoudle:
             # .update()方法会覆盖已有的键值,原数据中没有则添加进去
             # 原数据有的，但new数据没有则不变
             doc.metadata.update({
-                'parent_id': str(uuid.uuid4()),          # 全局唯一标识符
+                # 用文件名作为种子生成固定 UUID，同一文件每次运行得到的 parent_id 不变
+                'parent_id': str(uuid.uuid5(uuid.NAMESPACE_URL, doc.metadata.get('source', ''))),
                 'doc_type': 'parent_doc',   # 标记为父文档，区别于后续切割生成的子文档
                 'source_file': os.path.basename(doc.metadata.get('source', '')),  # 保留原始文件名
             })
@@ -77,8 +78,8 @@ class DataProcessingMoudle:
             parent_id = doc.metadata["parent_id"]
             # 对每个chunk进行元数据增强并建立映射
             for i, chunk in enumerate(md_chunks):
-                # 为每一个子块分配唯一id
-                child_id = str(uuid.uuid4())
+                # 基于父文档ID和块序号生成确定性子块ID，同一位置的块每次运行ID不变
+                child_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{parent_id}:{i}"))
                 # 合并原文档的元数据和新的标题元数据
                 chunk.metadata.update(doc.metadata)
                 chunk.metadata.update({
