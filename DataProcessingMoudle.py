@@ -50,7 +50,11 @@ class DataProcessingMoudle:
         return documents
     # 切割文件
     def split_document(self):
-        # 防呆：确保先加载文档再切割
+        # 重置状态，防止重复调用时旧数据累积导致数量不一致
+        self.chunks = []
+        self.parent_child_map.clear()
+        self.parent_child_map_reverse.clear()
+
         if not self.documents:
             raise RuntimeError("请先调用 loader_files() 加载文档，再执行切割操作")
 
