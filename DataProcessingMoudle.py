@@ -162,6 +162,7 @@ class DataProcessingMoudle:
 
     def get_chunks_by_parent(self, parent_id: str) -> List[Document]:
         """根据父文档ID检索其所有子块。"""
+        # parent_child_map_reverse：{"parent_id_0":[child_00_id,....], "parent_id_1":[child_10_id, ...]}
         child_ids = self.parent_child_map_reverse.get(parent_id, [])
         return [c for c in self.chunks if c.metadata["chunk_id"] in child_ids]
 
