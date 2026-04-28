@@ -1,6 +1,8 @@
 """
 索引构建模块
+向量索引构建 -> 保存索引到本地 -> 从本地加载索引
 """
+import os
 from typing import List
 from pathlib import Path
 
@@ -8,17 +10,48 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 
-class IndexConstructionMoudle:
+MODELSCOPE_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models')
+
+
+class IndexConstructionModule:
 
     def __init__(self, model_name: str, index_save_path: str):
-        self.model_name = model_name
         self.index_save_path = index_save_path
+        self.model_name = self._resolve_model(model_name)
         self.embeddings = HuggingFaceEmbeddings(
             model_name=self.model_name,
             model_kwargs={'device': 'cpu'},
             encode_kwargs={'normalize_embeddings': True}
         )
         self.vectorstore = None
+
+    @staticmethod
+    def _resolve_model(model_name: str) -> str:
+        """如果是远程模型名，从 ModelScope 下载到本地，返回本地路径。"""
+        # 已经是本地路径则直接返回
+        if Path(model_name).exists():
+            return model_name
+
+        # 不含 / 的短名称也视为本地模型名
+        if '/' not in model_name:
+            return model_name
+
+        local_dir = os.path.join(MODELSCOPE_CACHE, model_name.replace('/', '_'))
+
+        if Path(local_dir).exists():
+            print(f"模型已缓存: {local_dir}")
+            return local_dir
+
+        print(f"从 ModelScope 下载模型 {model_name} ...")
+        try:
+            from modelscope import snapshot_download
+            os.makedirs(MODELSCOPE_CACHE, exist_ok=True)
+            downloaded = snapshot_download(model_name, cache_dir=MODELSCOPE_CACHE)
+            print(f"模型已下载到: {downloaded}")
+            return downloaded
+        except Exception:
+            print("ModelScope 下载失败，回退到 HuggingFace 直接加载")
+            return model_name
 
     
     def build_vector_index(self, chunks: List[Document]):

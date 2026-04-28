@@ -11,7 +11,7 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter
 from langchain_core.documents import Document
 from typing import List, Dict
 
-class DataProcessingMoudle:
+class DataProcessingModule:
     def __init__(self, directory_path: str):
         self.directory_path = directory_path
         self.documents: List[Document] = []
@@ -170,6 +170,3 @@ class DataProcessingMoudle:
         # parent_child_map_reverse：{"parent_id_0":[child_00_id,....], "parent_id_1":[child_10_id, ...]}
         child_ids = self.parent_child_map_reverse.get(parent_id, [])
         return [c for c in self.chunks if c.metadata["chunk_id"] in child_ids]
-
-
-        
