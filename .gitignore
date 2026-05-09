@@ -4,3 +4,5 @@ data
 faiss_index
 local_models
 学习笔记.md
+config.py
+evaluation.py

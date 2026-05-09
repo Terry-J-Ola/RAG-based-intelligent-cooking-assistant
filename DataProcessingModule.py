@@ -27,7 +27,7 @@ class DataProcessingModule:
 
         loader = DirectoryLoader(
             path=self.directory_path,
-            glob="*.md",
+            glob="**/*.md",
             loader_cls=TextLoader,
             loader_kwargs={'encoding':'utf-8'},
             show_progress=True

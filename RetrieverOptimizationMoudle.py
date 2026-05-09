@@ -1,5 +1,5 @@
 """
-检索生成模块：混合向量+BM25检索，支持RRF重排与元数据过滤
+检索生成模块：混合向量+BM25检索, 支持RRF重排与元数据过滤
 """
 
 from typing import List, Dict, Any
@@ -15,14 +15,14 @@ class RetrieverGenerationMoudle:
         """
         Args:
             vectorstore: 已构建的FAISS向量库
-            chunks: 原始文档切片列表，用于初始化BM25检索器
+            chunks: 原始文档切片列表, 用于初始化BM25检索器
         """
         self.vectorstore = vectorstore
         self.chunks = chunks
         self.setup_vectorstore()
 
     def setup_vectorstore(self):
-        """初始化向量检索器(similarity)和BM25关键词检索器，设置默认召回数k=5"""
+        """初始化向量检索器(similarity)和BM25关键词检索器, 设置默认召回数k=5"""
         self.vector_retriever = self.vectorstore.as_retriever(
             search_type = "similarity",
             search_kwargs = {'k': 5}
@@ -31,7 +31,7 @@ class RetrieverGenerationMoudle:
             self.chunks,
             k = 5
             )
-        
+
     def hybrid_search(self, query: str, top_k: int=3) -> List[Document]:
         """混合检索：对两路召回结果进行RRF重排，返回top_k条"""
         # 并行调用两路检索器：语义向量 + 关键词BM25，互补召回
