@@ -1,0 +1,318 @@
+:root {
+    --bg: #f4efe6;
+    --panel: rgba(255, 252, 246, 0.85);
+    --panel-strong: #fffaf2;
+    --line: rgba(74, 53, 35, 0.14);
+    --text: #2e241c;
+    --muted: #73614e;
+    --accent: #b54d1f;
+    --accent-dark: #863714;
+    --accent-soft: #f3d8c8;
+    --success: #2f7d4a;
+    --shadow: 0 24px 60px rgba(90, 55, 20, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(circle at top left, rgba(234, 150, 85, 0.26), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(200, 122, 48, 0.18), transparent 24%),
+        linear-gradient(135deg, #f7f0e6 0%, #f2e4d2 46%, #ead6bd 100%);
+}
+
+.page-shell {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 32px 0;
+    display: grid;
+    grid-template-columns: 0.95fr 1.25fr;
+    gap: 24px;
+}
+
+.hero-panel,
+.chat-panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+}
+
+.hero-panel {
+    padding: 36px 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-panel::after {
+    content: "";
+    position: absolute;
+    right: -30px;
+    bottom: -30px;
+    width: 180px;
+    height: 180px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(181, 77, 31, 0.18), transparent 68%);
+}
+
+.eyebrow,
+.section-kicker {
+    margin: 0 0 12px;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.hero-panel h1,
+.chat-panel h2 {
+    margin: 0;
+    line-height: 1.05;
+}
+
+.hero-panel h1 {
+    font-size: clamp(40px, 5vw, 66px);
+}
+
+.hero-copy {
+    margin: 18px 0 0;
+    max-width: 28rem;
+    font-size: 17px;
+    line-height: 1.8;
+    color: var(--muted);
+}
+
+.tips-card {
+    margin-top: 28px;
+    padding: 20px;
+    border-radius: 22px;
+    background: rgba(255, 248, 240, 0.84);
+    border: 1px solid rgba(181, 77, 31, 0.12);
+}
+
+.tips-title {
+    margin: 0 0 14px;
+    font-weight: 700;
+}
+
+.prompt-chip {
+    width: 100%;
+    margin-top: 10px;
+    padding: 14px 16px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    text-align: left;
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.prompt-chip:hover {
+    transform: translateY(-1px);
+    background: #efc8b2;
+}
+
+.chat-panel {
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    min-height: 78vh;
+}
+
+.panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: #f4eadf;
+    color: var(--accent-dark);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.status-badge.loading {
+    color: #8a5a0b;
+    background: #f7ebc9;
+}
+
+.status-badge.success {
+    color: var(--success);
+    background: #ddf1e3;
+}
+
+.status-badge.error {
+    color: #982f2f;
+    background: #f8dddd;
+}
+
+.result-card {
+    margin-top: 22px;
+    padding: 24px;
+    border-radius: 24px;
+    background: var(--panel-strong);
+    border: 1px solid var(--line);
+    min-height: 320px;
+    white-space: pre-wrap;
+    line-height: 1.75;
+}
+
+.result-card.is-empty {
+    display: grid;
+    place-items: center;
+}
+
+.empty-state {
+    margin: 0;
+    color: var(--muted);
+}
+
+.answer-title,
+.sources-title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.answer-body {
+    margin: 0;
+    font-size: 16px;
+}
+
+.sources-list {
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sources-list li {
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #efe5d8;
+    font-size: 14px;
+    color: #694a34;
+}
+
+.composer {
+    margin-top: 20px;
+    padding: 22px;
+    border-radius: 24px;
+    background: rgba(255, 249, 241, 0.84);
+    border: 1px solid var(--line);
+}
+
+.composer-label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.composer textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 110px;
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(107, 74, 44, 0.18);
+    background: #fffdf9;
+    font: inherit;
+    color: inherit;
+}
+
+.composer textarea:focus {
+    outline: 2px solid rgba(181, 77, 31, 0.28);
+    border-color: rgba(181, 77, 31, 0.38);
+}
+
+.composer-actions {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.composer-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.composer button {
+    border: 0;
+    border-radius: 999px;
+    padding: 14px 22px;
+    background: linear-gradient(135deg, var(--accent) 0%, #cf6f31 100%);
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.composer button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.composer button:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+@media (max-width: 920px) {
+    .page-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .chat-panel {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-shell {
+        width: min(100% - 18px, 1180px);
+        padding: 12px 0 18px;
+    }
+
+    .hero-panel,
+    .chat-panel,
+    .result-card,
+    .composer {
+        border-radius: 22px;
+    }
+
+    .hero-panel,
+    .chat-panel {
+        padding: 20px;
+    }
+
+    .composer-actions,
+    .panel-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

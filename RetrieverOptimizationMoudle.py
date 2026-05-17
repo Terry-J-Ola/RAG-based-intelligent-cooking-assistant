@@ -51,14 +51,14 @@ class RetrieverGenerationMoudle:
 
         # 第一路：向量检索结果，rank越小表示排名越靠前
         for rank, doc in enumerate(vector_docs):
-            doc_id = doc.metadata.get("id", doc.page_content)
+            doc_id = doc.metadata.get("chunk_id", doc.page_content)
             # RRF公式: score = 1 / (k + rank)，排名越靠前分数越高
             score = 1.0 / (k + rank + 1)
             doc_map[doc_id] = (doc, score)
 
         # 第二路：BM25关键词检索，重复文档分数累加
         for rank, doc in enumerate(bm25_docs):
-            doc_id = doc.metadata.get("id", doc.page_content)
+            doc_id = doc.metadata.get("chunk_id", doc.page_content)
             score = 1.0 / (k + rank + 1)
             if doc_id in doc_map:
                 # 同一文档在两路都出现，累加分数（增强置信度）

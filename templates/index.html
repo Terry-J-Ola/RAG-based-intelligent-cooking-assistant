@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        <aside class="hero-panel">
+            <p class="eyebrow">FASTAPI + RAG</p>
+            <h1>RAG 菜谱助手</h1>
+            <p class="hero-copy">
+                把你现有的本地知识库接成一个可以直接提问、查看答案与来源的网页版本。
+            </p>
+            <div class="tips-card">
+                <p class="tips-title">可直接试试这些问题</p>
+                <button class="prompt-chip" data-prompt="宫保鸡丁怎么做？" type="button">宫保鸡丁怎么做？</button>
+                <button class="prompt-chip" data-prompt="适合新手的家常菜有哪些？" type="button">适合新手的家常菜有哪些？</button>
+                <button class="prompt-chip" data-prompt="红烧肉需要准备哪些食材？" type="button">红烧肉需要准备哪些食材？</button>
+            </div>
+        </aside>
+
+        <main class="chat-panel">
+            <div class="panel-header">
+                <div>
+                    <p class="section-kicker">Web Demo</p>
+                    <h2>开始提问</h2>
+                </div>
+                <span id="statusBadge" class="status-badge">就绪</span>
+            </div>
+
+            <section id="resultCard" class="result-card is-empty">
+                <p class="empty-state">输入一个和菜谱相关的问题，答案会显示在这里。</p>
+            </section>
+
+            <form id="chatForm" class="composer">
+                <label class="composer-label" for="queryInput">你的问题</label>
+                <textarea
+                    id="queryInput"
+                    name="query"
+                    rows="4"
+                    placeholder="例如：番茄炒蛋的步骤是什么？"
+                    required
+                ></textarea>
+                <div class="composer-actions">
+                    <p class="composer-hint">当前版本会返回答案和参考菜谱来源。</p>
+                    <button id="submitButton" type="submit">发送问题</button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', path='/app.js') }}"></script>
+</body>
+</html>
