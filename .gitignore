@@ -10,3 +10,4 @@ evaluation.py
 .vscode/
 __pycache__/
 *.pyc
+.claude

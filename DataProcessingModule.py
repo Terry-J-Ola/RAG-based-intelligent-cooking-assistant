@@ -1,15 +1,17 @@
 """
-练习重写rag的数据处理模块
-内容包括: 数据加载、给父文档添加唯一id、生成映射字典、切割文档、构建父子文档的映射关系
+Data processing for the RAG pipeline.
 """
 
+import json
 import os
 import sys
-from langchain_community.document_loaders import TextLoader, DirectoryLoader
 import uuid
-from langchain_text_splitters import MarkdownHeaderTextSplitter
+from typing import Dict, List
+
+from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_core.documents import Document
-from typing import List, Dict
+from langchain_text_splitters import MarkdownHeaderTextSplitter
+
 
 class DataProcessingModule:
     def __init__(self, directory_path: str):
@@ -17,8 +19,8 @@ class DataProcessingModule:
         self.documents: List[Document] = []
         self.chunks: List[Document] = []
         self.parent_child_map: Dict[str, str] = {}
-        self.parent_child_map_reverse: Dict[str, List[str]] = {}  # parent_id → [child_id, ...]
-    # 加载文件
+        self.parent_child_map_reverse: Dict[str, List[str]] = {}
+
     def loader_files(self):
         documents = []
         if not os.path.exists(self.directory_path):
@@ -29,134 +31,146 @@ class DataProcessingModule:
             path=self.directory_path,
             glob="**/*.md",
             loader_cls=TextLoader,
-            loader_kwargs={'encoding':'utf-8'},
-            show_progress=True
+            loader_kwargs={"encoding": "utf-8"},
+            show_progress=True,
         )
 
-        md_documents = loader.load() # 被加载的.md文档
-        print(f"成功加载 {self.directory_path} 下的所有.md文件, 一共有 {len(md_documents)} 份.md文档")
-        # 增强父文档元数据：为每份父文档添加唯一ID、文档类型及原始路径信息，
-        # 方便后续切割后通过映射字典追溯子文档与父文档的归属关系。
+        md_documents = loader.load()
+        print(
+            f"成功加载 {self.directory_path} 下的所有 .md 文件, 一共有 {len(md_documents)} 份 .md 文档"
+        )
+
         for doc in md_documents:
-            # .update()方法会覆盖已有的键值,原数据中没有则添加进去
-            # 原数据有的，但new数据没有则不变
-            doc.metadata.update({
-                # 用文件名作为种子生成固定 UUID，同一文件每次运行得到的 parent_id 不变
-                'parent_id': str(uuid.uuid5(uuid.NAMESPACE_URL, doc.metadata.get('source', ''))),
-                'doc_type': 'parent_doc',   # 标记为父文档，区别于后续切割生成的子文档
-                'source_file': os.path.basename(doc.metadata.get('source', '')),  # 保留原始文件名
-            })
+            source = doc.metadata.get("source", "")
+            doc.metadata.update(
+                {
+                    "parent_id": str(uuid.uuid5(uuid.NAMESPACE_URL, source)),
+                    "doc_type": "parent_doc",
+                    "source_file": os.path.basename(source),
+                }
+            )
             documents.append(doc)
+
         self.documents = documents
         return documents
-    # 切割文件
+
     def split_document(self):
-        # 重置状态，防止重复调用时旧数据累积导致数量不一致
         self.chunks = []
         self.parent_child_map.clear()
         self.parent_child_map_reverse.clear()
 
         if not self.documents:
-            raise RuntimeError("请先调用 loader_files() 加载文档，再执行切割操作")
+            raise RuntimeError("请先调用 loader_files() 加载文档，再执行切块操作")
 
-        # 定义要分割的标题层级
-        head_to_split_on = [
-            ("#","主标题"),
-            ("##","副标题"),
-            ("###","三级标题")
+        headers_to_split_on = [
+            ("#", "主标题"),
+            ("##", "副标题"),
+            ("###", "三级标题"),
         ]
-        # 使用markdown分割器
         markdown_splitter = MarkdownHeaderTextSplitter(
-            headers_to_split_on=head_to_split_on,
-            strip_headers=False #保留标题，便于理解上下文
+            headers_to_split_on=headers_to_split_on,
+            strip_headers=False,
         )
-        all_chunks = []
 
+        all_chunks = []
         for doc in self.documents:
-            # 对每个文档进行Markdown分割
             md_chunks = markdown_splitter.split_text(doc.page_content)
             parent_id = doc.metadata["parent_id"]
-            # 对每个chunk进行元数据增强并建立映射
+
             for i, chunk in enumerate(md_chunks):
-                # 基于父文档ID和块序号生成确定性子块ID，同一位置的块每次运行ID不变
                 child_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{parent_id}:{i}"))
-                # 合并原文档的元数据和新的标题元数据
                 chunk.metadata.update(doc.metadata)
-                chunk.metadata.update({
-                    "chunk_id":child_id,
-                    "parent_id":parent_id,
-                    "doc_type":"child",
-                    "chunk_index":i
-                    })
-                # 建立父子映射关系字典
+                chunk.metadata.update(
+                    {
+                        "chunk_id": child_id,
+                        "parent_id": parent_id,
+                        "doc_type": "child",
+                        "chunk_index": i,
+                    }
+                )
                 self.parent_child_map[child_id] = parent_id
-                # 同时维护反向映射：parent_id → [child_id, ...]，方便按父文档查找所有子块
                 self.parent_child_map_reverse.setdefault(parent_id, []).append(child_id)
-                #举个例子：
-                #如果 child_id 是 "小明",parent_id 是 "大明"。
-                #执行后，字典里就会存入：{"小明": "大明"}。
-                #这样当你拿着 "小明" 去查这个字典时，立刻就能知道他的父亲是 "大明"。
-            # 再对每一个父文档的所有chunks元数据增强后,添加回去
+
             all_chunks.extend(md_chunks)
+
         self.chunks = all_chunks
         return all_chunks
-    
-    def export_metadata(self, output_path: str):
-        """
-        导出元数据到JSON文件
-        
-        Arg:
-            output_path: 输出文件路径
-        """
-        import json
 
+    def export_metadata(self, output_path: str):
         metadata_list = []
         for doc in self.documents:
-            metadata_list.append({
-                "source":doc.metadata.get('source'),
-                "content_length":len(doc.page_content),
-                "parent_id":doc.metadata.get('parent_id')
-            })
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(metadata_list, f, ensure_ascii=False, indent=2)
+            metadata_list.append(
+                {
+                    "source": doc.metadata.get("source"),
+                    "content_length": len(doc.page_content),
+                    "parent_id": doc.metadata.get("parent_id"),
+                }
+            )
+
+        with open(output_path, "w", encoding="utf-8") as file:
+            json.dump(metadata_list, file, ensure_ascii=False, indent=2)
+
         print(f"元数据已导出到：{output_path}")
 
     def get_parent_by_child(self, child_chunks: List[Document]):
         """
-        根据子块找到父文档
-        Arg: 
-            child_chunks:检索到的子块
-        Returns:
-            对应的父文档列表(按相关性去重)
+        Map retrieved child chunks back to parent docs.
+        Ranking favors earlier ranks and repeated hits, and falls back to
+        source_file if an old FAISS index carries stale parent_id metadata.
         """
-        # 统计每个父文档被匹配的次数(次数作为一种相关性指标)
-        parent_relevance = {}
-        parent_docs_map = {}
-        # 收集每个子块的parent_id和相关性分数
-        for chunk in child_chunks:
-            # 增加相关性分数
-            parent_id = chunk.metadata.get('parent_id')
-            parent_relevance[parent_id] = parent_relevance.get(parent_id, 0) + 1
-            # 缓存父文档，避免重复查找
-            if parent_id not in parent_docs_map:
-                for doc in self.documents:
-                    if doc.metadata.get('parent_id') == parent_id:
-                        parent_docs_map[parent_id] = doc
-                        break
-        # 按相关性分数排序(次数多的排前面),sorted_parent_ids是一个list
-        sorted_parent_ids = sorted(parent_relevance.keys(),
-                                  key = lambda x:parent_relevance[x],
-                                  reverse=True
-                                  )
-        # 构建去重后的,且相关性由高到低的父文档列表
-        sorted_parent_documents = []
-        for parent_id in sorted_parent_ids:
-            if parent_id in parent_docs_map:
-                sorted_parent_documents.append(parent_docs_map[parent_id])
-        return sorted_parent_documents
+        parent_docs_by_id = {
+            doc.metadata.get("parent_id"): doc
+            for doc in self.documents
+            if doc.metadata.get("parent_id")
+        }
+        parent_docs_by_source = {
+            doc.metadata.get("source_file"): doc
+            for doc in self.documents
+            if doc.metadata.get("source_file")
+        }
+
+        parent_scores: Dict[str, Dict[str, float | int]] = {}
+        parent_docs_map: Dict[str, Document] = {}
+
+        for rank, chunk in enumerate(child_chunks):
+            parent_id = chunk.metadata.get("parent_id")
+            source_file = chunk.metadata.get("source_file")
+
+            parent_doc = parent_docs_by_id.get(parent_id)
+            if parent_doc is None and source_file:
+                parent_doc = parent_docs_by_source.get(source_file)
+                if parent_doc is not None:
+                    parent_id = parent_doc.metadata.get("parent_id")
+
+            if parent_doc is None or not parent_id:
+                continue
+
+            stats = parent_scores.setdefault(
+                parent_id,
+                {"score": 0.0, "hits": 0, "best_rank": rank},
+            )
+            stats["score"] += 1.0 / (rank + 1)
+            stats["hits"] += 1
+            stats["best_rank"] = min(stats["best_rank"], rank)
+            parent_docs_map[parent_id] = parent_doc
+
+        sorted_parent_ids = sorted(
+            parent_scores.keys(),
+            key=lambda pid: (
+                parent_scores[pid]["score"],
+                parent_scores[pid]["hits"],
+                -parent_scores[pid]["best_rank"],
+            ),
+            reverse=True,
+        )
+
+        return [
+            parent_docs_map[parent_id]
+            for parent_id in sorted_parent_ids
+            if parent_id in parent_docs_map
+        ]
 
     def summary(self) -> dict:
-        """快速查看数据处理概况，方便调试。"""
         parent_count = len(self.documents)
         chunk_count = len(self.chunks)
         return {
@@ -166,7 +180,5 @@ class DataProcessingModule:
         }
 
     def get_chunks_by_parent(self, parent_id: str) -> List[Document]:
-        """根据父文档ID检索其所有子块。"""
-        # parent_child_map_reverse：{"parent_id_0":[child_00_id,....], "parent_id_1":[child_10_id, ...]}
         child_ids = self.parent_child_map_reverse.get(parent_id, [])
-        return [c for c in self.chunks if c.metadata["chunk_id"] in child_ids]
+        return [chunk for chunk in self.chunks if chunk.metadata["chunk_id"] in child_ids]
